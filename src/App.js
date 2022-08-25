@@ -10,13 +10,9 @@ import Register from './components/Register/Register';
 import Particles from "react-tsparticles";
 import { loadFull } from "tsparticles";
 
-import Clarifai from 'clarifai';
-
 import './App.css';
 
-const app = new Clarifai.App({
-  apiKey: '57317814509b4d75a882c73f6e549f37'
-});
+
 
 const particlesInit = async (main) => {
   // console.log(main);
@@ -62,6 +58,21 @@ const particlesOptions = {
       value: 80,
     },
   }
+}
+
+const initialState = {
+    input: '',
+    imageUrl: '',
+    box: {},
+    route: 'signin',
+    isSignedIn: false,
+    user: {
+        id: '',
+        name: '',
+        email: '',
+        entries: 0,
+        joined: new Date()
+    }
 }
 
 class App extends Component {
@@ -118,17 +129,39 @@ class App extends Component {
     this.setState({input: event.target.value});
   }
 
-  onButtonSubmit = () => {
+  onPictureSubmit = () => {
     this.setState({imageUrl: this.state.input});
-    app.models
-    .predict('a403429f2ddf4b49b307e318f00e528b', this.state.input)
-    .then(response => this.displayFaceBox(this.calculateFaceLocation(response)))
+    fetch('https://sleepy-sea-91124.herokuapp.com/imageurl', {
+      method: 'post',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+          input: this.state.input
+      })
+    })
+    .then(response => response.json())
+    .then(response => {
+      if (response) {
+        fetch('https://sleepy-sea-91124.herokuapp.com/image', {
+          method: 'put',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+              id: this.state.user.id
+          })
+        })
+        .then(response => response.json())
+        .then(count => {
+          this.setState(Object.assign(this.state.user, {entries: count}))
+        })
+        .catch(console.log)
+      }
+      this.displayFaceBox(this.calculateFaceLocation(response))
+    })
     .catch(error => console.log(error));
   }
 
   onRouteChange = (route) => {
     if (route === 'signout') {
-      this.setState({isSignedIn: false});
+      this.setState(initialState);
     } else if (route === 'home') {
       this.setState({isSignedIn: true});
     }
@@ -149,12 +182,12 @@ class App extends Component {
         { route === 'home'
           ? <div>
               <Logo />
-              <Rank />
-              <ImageLinkForm onInputChange={this.onInputChange} onButtonSubmit={this.onButtonSubmit} />
+              <Rank name={this.state.user.name} entries={this.state.user.entries} />
+              <ImageLinkForm onInputChange={this.onInputChange} onPictureSubmit={this.onPictureSubmit} />
               <FaceRecognition box={box} imageUrl={imageUrl} />
             </div>
           : ( route === 'signin' 
-              ? <Signin onRouteChange={this.onRouteChange} />
+              ? <Signin loadUser={this.loadUser} onRouteChange={this.onRouteChange} />
               : <Register loadUser={this.loadUser} onRouteChange={this.onRouteChange} />
             )
         }
