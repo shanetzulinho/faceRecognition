@@ -131,7 +131,7 @@ class App extends Component {
 
   onPictureSubmit = () => {
     this.setState({imageUrl: this.state.input});
-    fetch(`${process.env.API_URL}/imageurl`, {
+    fetch(`${process.env.REACT_APP_API_URL}/imageurl`, {
       method: 'post',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
@@ -141,7 +141,7 @@ class App extends Component {
     .then(response => response.json())
     .then(response => {
       if (response) {
-        fetch(`${process.env.API_URL}/image`, {
+        fetch(`${process.env.REACT_APP_API_URL}/image`, {
           method: 'put',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({
